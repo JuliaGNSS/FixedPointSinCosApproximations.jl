@@ -3,7 +3,13 @@ uuid = "aedcc28f-63b5-4046-b467-b09cfa7c8db7"
 authors = ["Soeren Zorn"]
 version = "0.1.0"
 
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+
 [compat]
+LoopVectorization = "0.6.11"
+DocStringExtensions = "0.6, 0.7, 0.8"
 julia = "1.1"
 
 [extras]
