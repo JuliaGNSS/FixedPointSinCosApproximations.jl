@@ -9,7 +9,7 @@ LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 
 [compat]
 DocStringExtensions = "0.6, 0.7, 0.8"
-LoopVectorization = "0.8.1 - 0.9"
+LoopVectorization = "0.8"
 julia = "1.4"
 
 [extras]
