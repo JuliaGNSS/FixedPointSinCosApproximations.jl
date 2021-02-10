@@ -13,7 +13,7 @@ end
 @inline function get_quarter_angle(x, ::Val{N}) where N
     x & (one(x) << N - one(x)) - one(x) << (N - 1)
 end
-@inline mysign(x) = vifelse(x >= zero(x), one(x), -one(x))
+@inline mysign(x) = ifelse(x >= zero(x), one(x), -one(x))
 
 """
 $(SIGNATURES)
