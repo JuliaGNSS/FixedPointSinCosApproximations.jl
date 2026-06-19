@@ -16,5 +16,6 @@ module FixedPointSinCosApproximations
     include("fifth_order.jl")
     include("sixth_order.jl")
     include("approximations.jl")
+    include("carrier.jl")
 
 end # module
