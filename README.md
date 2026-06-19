@@ -13,53 +13,67 @@ julia> ]
 pkg> add FixedPointSinCosApproximations
 ```
 
-Usage:
-```julia
-using FixedPointSinCosApproximations, StructArrays
-function generate_carrier!(carrier, doppler, sampling_frequency, num_samples, bits::Val{B} = Val(8)) where B
-    sampling_frequency_i32 = Base.SignedMultiplicativeInverse(floor(Int32, sampling_frequency))
-    scaled_doppler_i32 = floor(Int32, 2π * doppler * 1 << B / π * 2)
-    @inbounds for i = Int32(1):Int32(num_samples)
-        carrier.im[i], carrier.re[i] = fpsincos(div(scaled_doppler_i32 * i, sampling_frequency_i32), bits)
-    end
-end
+## Generating a carrier
 
-carrier = StructArray(zeros(Complex{Int32}, 2000))
-
-generate_carrier!(carrier, 1000, 2e6, 2000)
-
-using Plots
-plot(real.(carrier))
-plot!(real.(cos.(2π * 1000 / 2e6 * (1:2000))) * 1 << 8)
-
-using BenchmarkTools
-@btime generate_carrier!($carrier, 1000, 2e6, 2000)
-    # 1.467 μs (0 allocations: 0 bytes)
-
-carrier_reference = zeros(ComplexF32, 2000)
-@btime $carrier_reference .= cis.(2π * 1000 / 2e6 * (1:2000))
-    #18.578 μs (0 allocations: 0 bytes)
-```
-
-For more speed separate carrier and phase generation:
+`generate_carrier!` fills sin/cos arrays with an `N`-bit fixed-point carrier (amplitude
+`2^N`), fully SIMD-vectorised and **drift-free**: the phase is advanced by an exact
+integer DDA (`div(n·numerator, denominator)`), so it never accumulates rounding error —
+unlike a binary fractional accumulator, whose error grows when the frequency's
+denominator is not a power of two.
 
 ```julia
-function generate_carrier!(phases, carrier, doppler, sampling_frequency, num_samples, bits::Val{B} = Val(8)) where B
-    sampling_frequency_i32 = Base.SignedMultiplicativeInverse(floor(Int32, sampling_frequency))
-    scaled_doppler_i32 = floor(Int32, 2π * doppler * 1 << B / π * 2)
-    @inbounds for i = Int32(1):Int32(num_samples)
-        phases[i] = div(scaled_doppler_i32 * i, sampling_frequency_i32)
-    end
-    @inbounds for i = 1:num_samples
-        carrier.im[i], carrier.re[i] = fpsincos(phases[i], bits)
-    end
-end
+using FixedPointSinCosApproximations
 
-phases = zeros(Int32, 2000)
+sin_out = Vector{Int16}(undef, 2000)
+cos_out = Vector{Int16}(undef, 2000)
 
-@btime generate_carrier!($phases, $carrier, 1000, 2e6, 2000)
-    # 1.034 μs (0 allocations: 0 bytes)
+# 1 kHz carrier sampled at 2 MHz, 7-bit approximation (amplitude 2^7 = 128)
+generate_carrier!(sin_out, cos_out, Val(7); frequency = 1000, sampling_frequency = 2_000_000)
 ```
+
+The frequency can be given three ways, and `phase` sets the initial phase (default 0;
+an `Integer` is exact phase units, a `Real` is cycles):
+
+```julia
+generate_carrier!(sin_out, cos_out, Val(7); frequency = 1000, sampling_frequency = 2e6)
+generate_carrier!(sin_out, cos_out, Val(7), cycles_per_sample(1000, 2e6))  # normalised f/fs
+generate_carrier!(sin_out, cos_out, Val(7), 1, 2560; phase = 0.25)         # exact step num/den, ¼-cycle offset
+```
+
+Use `Int32` arrays with `Val(8)`–`Val(14)` for higher accuracy:
+
+```julia
+sin32 = Vector{Int32}(undef, 2000); cos32 = similar(sin32)
+generate_carrier!(sin32, cos32, Val(13); frequency = 1000, sampling_frequency = 2e6)
+```
+
+### Array-free iterators
+
+To fuse carrier generation into your own SIMD loop without allocating an intermediate
+array, iterate `generate_carrier`, which yields `(sin, cos)` `Vec` pairs (the analogue of
+`FastSinCos`'s `fast_sincos(::Vec)`, but a fixed-point kernel):
+
+```julia
+using FixedPointSinCosApproximations, SIMD
+
+accumulator = zero(Int32)
+for (sin_vec, cos_vec) in generate_carrier(Val(7), cycles_per_sample(1000, 2e6), length(signal))
+    accumulator += # … your Vec{32,Int16} work, e.g. a correlator dot product …
+end
+```
+
+`generate_carrier4` yields four `(sin, cos)` pairs per step (four interleaved DDA states),
+reaching the full loop throughput even for trivial consumers such as filling an array.
+Destructure the 4-tuple in the loop header:
+
+```julia
+for ((s0, c0), (s1, c1), (s2, c2), (s3, c3)) in generate_carrier4(Val(7), 0.002, length(out))
+    # … 4×Vec{32,Int16} of sin/cos …
+end
+```
+
+The sections below show the lower-level `fpsin`/`fpcos`/`fpsincos` primitives that
+`generate_carrier!` is built on, for when you need a custom phase schedule.
 
 ## Explicit SIMD with SIMD.jl
 
@@ -102,14 +116,19 @@ range reduction is a single bit-mask rather than a Cody–Waite reduction. Run
 
 ## End-to-end: phase generation + sincos
 
+`generate_carrier!` (above) already does this end-to-end and is exactly drift-free
+(integer DDA). This section explains the technique it is built on, and benchmarks it
+against the float pipelines including phase generation.
+
 The kernel numbers above feed pre-computed phases. In practice you also pay for
-generating the phase. Generate it **drift-free in `Int32`** and narrow to the
-sincos argument only at the call. The cheapest way is an incremental
+generating the phase. The cheapest hand-rolled approach is an incremental
 accumulator: hold the per-lane phase in `Int32` (with `fp` fractional bits) and
 advance it by a constant `W * delta` each iteration — one vector add, no
 per-iteration multiply. Keep it in registers and write straight to the output
 arrays, so the only memory traffic per sample is the two output stores (sin and
-cos), with zero loads.
+cos), with zero loads. (A binary fractional step like this drifts slowly once the
+frequency's denominator is not a power of two; `generate_carrier!` avoids that with
+an exact rational DDA, at the same speed.)
 
 ```julia
 using FixedPointSinCosApproximations, SIMD
