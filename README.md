@@ -112,7 +112,7 @@ On an AVX-512 machine this runs the kernel at roughly **0.1 ns/sample** (`Int16`
 SIMD `Float32` approximation such as
 [FastSinCos.jl](https://github.com/JuliaGNSS/FastSinCos.jl), since the fixed-point
 range reduction is a single bit-mask rather than a Cody–Waite reduction. Run
-`julia bench/proof.jl` to reproduce the comparison.
+`julia benchmark/proof.jl` to reproduce the comparison.
 
 ## End-to-end: phase generation + sincos
 
@@ -168,4 +168,4 @@ to roughly float parity:
 
 So at a low-bit fixed-point target the `Int16` pipeline is fastest end-to-end
 (~1.4× the fastest float); the all-`Int32` pipeline is roughly on par with float;
-and float wins decisively on accuracy. Run `julia bench/endtoend.jl` to reproduce.
+and float wins decisively on accuracy. Run `julia benchmark/endtoend.jl` to reproduce.

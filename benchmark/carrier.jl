@@ -1,15 +1,9 @@
 # Throughput of the drift-free carrier generators (generate_carrier! and the array-free
-# iterators). Run from the repo root with:  julia bench/carrier.jl
+# iterators). Run from the repo root with:  julia benchmark/carrier.jl
 using Pkg
 Pkg.activate(@__DIR__)
-try
-    @eval using FixedPointSinCosApproximations, BenchmarkTools, SIMD
-catch
-    Pkg.develop(path = dirname(@__DIR__))
-    Pkg.add(["BenchmarkTools", "SIMD"])
-    @eval using FixedPointSinCosApproximations, BenchmarkTools, SIMD
-end
-using Printf
+Pkg.instantiate()
+using FixedPointSinCosApproximations, BenchmarkTools, SIMD, Printf
 
 const L = 16384
 mn(b) = minimum(b).time
