@@ -5,15 +5,16 @@ version = "0.2.2"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+SIMD = "fdea26ae-647d-5447-a871-4b548cad5224"
 
 [compat]
 DocStringExtensions = "0.7, 0.8, 0.9"
-LoopVectorization = "0.12.171"
+SIMD = "3"
 julia = "1.6"
 
 [extras]
+SIMD = "fdea26ae-647d-5447-a871-4b548cad5224"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["SIMD", "Test"]

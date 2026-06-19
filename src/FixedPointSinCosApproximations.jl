@@ -1,14 +1,14 @@
 module FixedPointSinCosApproximations
 
-    using LoopVectorization, DocStringExtensions
-    using LoopVectorization: Vec
+    using DocStringExtensions
+    import SIMD
 
     export fpsin,
         fpcos,
         fpsincos
 
-    const VInt16 = Union{Int16,Vec{<:Any,Int16}}
-    const VInt32 = Union{Int32,Vec{<:Any,Int32}}
+    const VInt16 = Union{Int16,SIMD.Vec{<:Any,Int16}}
+    const VInt32 = Union{Int32,SIMD.Vec{<:Any,Int32}}
 
     include("second_order.jl")
     include("third_order.jl")

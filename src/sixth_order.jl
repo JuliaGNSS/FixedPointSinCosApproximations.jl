@@ -15,8 +15,8 @@ end
 end
 
 @inline function calc_A(x::VInt32, bits::B) where B <: Union{Val{13}, Val{14}}
-    calc_A_fifth_order(x, bits)
+    calc_A_sixth(x, bits)
 end
 @inline function calc_B(x::VInt32, bits::B) where B <: Union{Val{13}, Val{14}}
-    calc_B_fifth_order(x, bits)
+    calc_B_sixth(x, bits)
 end
