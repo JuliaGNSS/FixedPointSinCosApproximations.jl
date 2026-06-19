@@ -14,6 +14,8 @@ end
     x & (one(x) << N - one(x)) - one(x) << (N - 1)
 end
 @inline mysign(x) = ifelse(x >= zero(x), one(x), -one(x))
+# SIMD.Vec needs vifelse; Base.ifelse is not defined for it
+@inline mysign(x::SIMD.Vec) = SIMD.vifelse(x >= zero(x), one(x), -one(x))
 
 """
 $(SIGNATURES)
