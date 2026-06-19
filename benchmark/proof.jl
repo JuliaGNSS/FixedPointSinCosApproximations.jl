@@ -1,15 +1,8 @@
 # Head-to-head: this package's fpsincos (on SIMD.Vec) vs FastSinCos.jl (SIMD Float32).
-# Run from the repo root with:  julia bench/proof.jl
+# Run from the repo root with:  julia benchmark/proof.jl
 using Pkg
 Pkg.activate(@__DIR__)
-# Set up deps on first run (FastSinCos is unregistered -> add from GitHub).
-try
-    @eval using FastSinCos
-catch
-    Pkg.develop(path = dirname(@__DIR__))
-    Pkg.add(["BenchmarkTools", "SIMD", "StructArrays"])
-    Pkg.add(url = "https://github.com/JuliaGNSS/FastSinCos.jl")
-end
+Pkg.instantiate()
 using FixedPointSinCosApproximations, FastSinCos, BenchmarkTools, SIMD, Printf
 
 # Uses the REAL package-exported fpsincos directly on SIMD.Vec.

@@ -1,13 +1,6 @@
 using Pkg
 Pkg.activate(@__DIR__)
-# Set up deps on first run (FastSinCos is unregistered -> add from GitHub).
-try
-    @eval using FastSinCos
-catch
-    Pkg.develop(path = dirname(@__DIR__))
-    Pkg.add(["BenchmarkTools", "SIMD"])
-    Pkg.add(url = "https://github.com/JuliaGNSS/FastSinCos.jl")
-end
+Pkg.instantiate()
 using FixedPointSinCosApproximations, FastSinCos, BenchmarkTools, SIMD, Printf
 
 # End-to-end carrier generation: phase computation + sincos, fully vectorised.

@@ -1,10 +1,6 @@
 using Pkg
 Pkg.activate(@__DIR__)
-try
-    @eval using FixedPointSinCosApproximations
-catch
-    Pkg.develop(path = dirname(@__DIR__)); Pkg.instantiate()
-end
+Pkg.instantiate()
 using FixedPointSinCosApproximations, Printf
 
 # For each (type, quarter-bits N) measure the current approximation error vs the
